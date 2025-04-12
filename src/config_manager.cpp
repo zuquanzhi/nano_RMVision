@@ -196,15 +196,19 @@ bool ConfigManager::loadConfig() {
 // 直接使用标准C++文件操作保存配置
 bool ConfigManager::saveConfig() {
     try {
-        // 创建备份
+        // 创建备份 - 使用时间戳命名，避免覆盖旧备份
         if (std::filesystem::exists(configPath)) {
-            std::string backupPath = configPath + ".bak";
+            // 获取当前时间作为备份文件的后缀
+            time_t now = time(nullptr);
+            char timestamp[20];
+            strftime(timestamp, sizeof(timestamp), "%Y%m%d_%H%M%S", localtime(&now));
+            
+            // 构造备份文件名: 原文件名.时间戳.bak
+            std::string backupPath = configPath + "." + timestamp + ".bak";
+            
             try {
-                std::filesystem::copy_file(
-                    configPath, 
-                    backupPath, 
-                    std::filesystem::copy_options::overwrite_existing
-                );
+                std::filesystem::copy_file(configPath, backupPath);
+                std::cout << "已创建备份: " << backupPath << std::endl;
             } catch (const std::exception& e) {
                 std::cerr << "创建备份文件失败: " << e.what() << std::endl;
                 // 继续保存，不因备份失败而中断保存过程

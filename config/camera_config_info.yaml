@@ -1,4 +1,4 @@
-# 相机配置文件 - 保存于 2025-04-12 17:15:55
+# 相机配置文件 - 保存于 2025-04-12 18:41:56
 
 # 相机基本状态
 camera_status: 1
@@ -9,7 +9,7 @@ resolution_height: 1024
 
 # 曝光控制
 auto_exposure: 1             # 自动曝光 (1=开启, 0=关闭)
-exposure_time: 7667.0       # 曝光时间 (微秒)
+exposure_time: 7750.0       # 曝光时间 (微秒)
 analog_gain: 0.0             # 模拟增益 (1-16)
 brightness: 145                # 目标亮度 (0-1000)
 
