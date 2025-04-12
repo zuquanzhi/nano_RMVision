@@ -1,0 +1,13 @@
+camera_status: 1
+
+resolution: (1280, 960)
+auto exp status: 1
+auto exp aim brightness: 50
+auto exp thresh: 6
+auto exp time range: (101,6000)
+auto exp analog gain: (5,5)
+gamma: 100
+contrast: 100
+fix exp analog gain: 64
+sharpness: 0
+number of frame speed models: 3

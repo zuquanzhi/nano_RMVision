@@ -1,0 +1,56 @@
+# 构建目录
+build/
+out/
+bin/
+
+# 临时文件
+*.o
+*.a
+*.out
+*.exe
+*.dll
+*.obj
+*.elf
+
+# CMake生成文件
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
+install_manifest.txt
+compile_commands.json
+CTestTestfile.cmake
+
+# 相机运行时生成的文件
+Camera/log/
+*.mvdat
+
+# 日志文件
+*.log
+log/
+
+# 相机捕获图像
+camera_capture_*.jpg
+camera_capture_*.png
+
+# 编辑器临时文件
+.vscode/
+.idea/
+.vs/
+*.swp
+*~
+*.bak
+*.user
+*.suo
+*.sdf
+*.opensdf
+*.sln.docstates
+
+# 操作系统生成的文件
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db

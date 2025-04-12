@@ -1,0 +1,44 @@
+%YAML:1.0
+---
+
+frame_width: 1280  # 图像宽度
+frame_height: 960 # 图像高度
+
+blue_channel_gain: 100 # B通道增益
+green_channel_gain: 128 # G通道增益
+red_channel_gain: 160 # R通道增益
+saturation: 100 # 饱和度
+contrast: 100 # 对比度
+gamma: 100 # 伽马值
+sharpness: 0 # 设置图像锐化程度[0-100]
+
+
+
+###################################################
+# 自瞄自动曝光设置
+auto_exp_target_brightness: 100  # 目标亮度值
+auto_exp_thresh: 6 # 阈值, 当当前亮度值与目标亮度值差值的绝对值小于该阈值时曝光时间和模拟增益不再发生变化
+auto_exp_min_expourse_time: 401 # 曝光时间最小值
+auto_exp_max_expourse_time: 12000 # 曝光时间最大值
+auto_exp_min_analog_gain: 5 # 模拟增益最小值
+auto_exp_max_analog_gain: 5 # 模拟增益最大值
+###################################################
+
+
+###################################################
+# 固定曝光设置
+armor_exposure_time: 3000 # 自瞄固定曝光值
+rune_red_exposure_time: 1501 # 紅色能量机关曝光值
+rune_blue_exposure_time: 801 # 藍色能量机关曝光值
+outpost_exposure_time: 20000 # 击打前哨战曝光值
+analog_gain: 4 # 模拟增益
+
+
+
+##################################################
+#大风车测试
+RUNE_CAMERAPARAM_LOW: 300  #能量机关相机曝光调节下限
+RUNE_CAMERAPARAM_HIGH: 2000 #能量机关相机曝光调节上限    
+RUNE_CAMERAPARAM_TIMEINTERVAL: 6 #能量机关相机曝光更改时间间隔(单位：s)  
+RUNE_EXPORSURETIME_INTERVAL: 100 #能量机关相机曝光更改值间隔
+RUNE_CAMERAPARAM_ADJUST: 0  #是否需要能量机关相机曝光调试
