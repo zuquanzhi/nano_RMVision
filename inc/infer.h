@@ -153,7 +153,8 @@ inline float cal_iou(const Armor a, const Armor b) {
     float max_y = std::max(ay_min, by_min);
     float min_y = std::min(ay_max, by_max);
 
-    if(min_x <= max_x || min_y <= max_y)
+    // 修正判断条件：如果两个矩形不相交，则返回0
+    if(max_x >= min_x || max_y >= min_y)
         return 0;
     
     float over_area = (min_x - max_x) * (min_y - max_y);
@@ -183,12 +184,15 @@ inline void nms(float* result, float conf_thr, float iou_thr, std::vector<Armor>
             // 找到最大的条件类别概率并乘上conf作为类别概率
             float cls = result[i * class_nums + 9];
             int cnt = 0;
-            for(int j = i * class_nums + 10; j < i * class_nums + class_nums; ++j) {
+            
+            // 修正类别索引计算
+            for(int j = i * class_nums + 9; j < i * class_nums + class_nums; ++j) {
                 if(cls < result[j]) {
                     cls = result[j];
-                    cnt = (j - 9) % (class_nums - 9);  // 修正类别索引计算
+                    cnt = j - (i * class_nums + 9);  // 计算类别索引
                 }
             }
+            
             cls *= result[8 + i * class_nums];
             temp.score = cls;
             temp.label = cnt;
@@ -204,15 +208,14 @@ inline void nms(float* result, float conf_thr, float iou_thr, std::vector<Armor>
         armors.resize(1);
     }
 
-    //按iou_thr将重合度高的armor进行筛掉
-    for(int i = 0;i < int(armors.size());++i)
-    {
-        for(int j = i + 1;j < int(armors.size());++j)
-            //如果与当前的框iou大于阈值则erase掉
-            if(cal_iou(armors[i], armors[j]) > iou_thr)
-            {
+    // 按iou_thr将重合度高的armor进行筛掉
+    for(int i = 0; i < int(armors.size()); ++i) {
+        for(int j = i + 1; j < int(armors.size()); ++j) {
+            // 如果与当前的框iou大于阈值则erase掉
+            if(cal_iou(armors[i], armors[j]) > iou_thr) {
                 armors.erase(armors.begin() + j);
-                --j;//万年不见--
+                --j; // 删除元素后，索引减一继续检查
             }
+        }
     }
 }
