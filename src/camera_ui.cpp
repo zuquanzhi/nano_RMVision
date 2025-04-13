@@ -1,6 +1,8 @@
 #include "CameraUI.h"
 #include <iostream>
 #include <chrono>
+#include <thread>
+#include <ArmorDetect.hpp>
 
 // 构造函数
 CameraUI::CameraUI(SimpleCamera& cam, const std::string& name)
@@ -14,22 +16,56 @@ CameraUI::~CameraUI() {
 
 // 初始化UI
 void CameraUI::init() {
-    // 创建用于显示相机图像的窗口
-    cv::namedWindow(windowName, cv::WINDOW_NORMAL);
-    cv::resizeWindow(windowName, 800, 600);
-    
-    // 创建控制相机参数的窗口
-    cv::namedWindow("Controls", cv::WINDOW_NORMAL);
-    cv::resizeWindow("Controls", 600, 400);
-    
-    // 创建所有滑动条
-    createTrackbars();
-    
-    // 创建按钮控件
-    createButtons();
-    
-    // 从相机读取参数更新界面
-    updateTrackbarsFromCamera();
+    try {
+        std::cout << "正在初始化相机UI界面..." << std::endl;
+        
+        // 在创建窗口前设置全局属性（这些是自定义环境变量，不是函数调用）
+        #if CV_MAJOR_VERSION >= 4
+        // OpenCV 4+的一些特殊设置
+        // 注意：这些不是直接通过函数调用设置的，而是通过环境变量
+        // setenv("OPENCV_WINDOW_NO_TITLEBAR", "0", 1);  // 保留标题栏
+        // setenv("OPENCV_WINDOW_FREERATIO", "0", 1);    // 不使用自由比例
+        #endif
+        
+        // 创建用于显示相机图像的窗口 - 使用更简单的WINDOW_NORMAL
+        cv::namedWindow(windowName, cv::WINDOW_NORMAL);
+        cv::resizeWindow(windowName, 800, 600);
+        
+        // 设置图像窗口背景颜色（尝试解决黑框问题）
+        cv::Mat background(600, 800, CV_8UC3, cv::Scalar(240, 240, 240));
+        cv::imshow(windowName, background);
+        cv::waitKey(1);  // 刷新显示
+        
+        // 创建控制相机参数的窗口
+        cv::namedWindow("Controls", cv::WINDOW_NORMAL);
+        cv::resizeWindow("Controls", 600, 400);
+        
+        // 设置窗口属性（使用正确的API）
+        cv::setWindowProperty(windowName, cv::WND_PROP_ASPECT_RATIO, cv::WINDOW_KEEPRATIO);
+        cv::setWindowProperty("Controls", cv::WND_PROP_ASPECT_RATIO, cv::WINDOW_KEEPRATIO);
+        
+        // 强制窗口刷新并等待
+        cv::waitKey(200); // 给窗口管理器更多时间来处理窗口创建
+        
+        // 创建所有滑动条
+        createTrackbars();
+        
+        // 创建按钮控件
+        createButtons();
+        
+        // 从相机读取参数更新界面
+        updateTrackbarsFromCamera();
+        
+        std::cout << "相机UI界面初始化完成" << std::endl;
+        
+        // 再次显示背景并强制刷新
+        cv::imshow(windowName, background);
+        cv::waitKey(1);
+    }
+    catch (const cv::Exception& e) {
+        std::cerr << "创建UI界面时发生OpenCV异常: " << e.what() << std::endl;
+        throw; // 重新抛出异常，让主程序处理
+    }
 }
 
 // 从相机参数更新UI界面
@@ -100,29 +136,101 @@ bool CameraUI::run() {
     running = true;
     cv::Mat frame;
     
+    std::cout << "UI主循环开始运行..." << std::endl;
+    
+    // 创建背景图像
+    cv::Mat background(600, 800, CV_8UC3, cv::Scalar(240, 240, 240));
+    cv::putText(background, "等待相机图像...", cv::Point(250, 300), 
+                cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 0, 0), 2);
+    cv::imshow(windowName, background);
+    cv::waitKey(1);  // 刷新显示
+    
     while (running) {
-        // 获取相机图像
-        if (camera.getFrame(frame)) {
-            // 显示图像
-            cv::imshow(windowName, frame);
-        } else {
-            std::cerr << "获取图像失败" << std::endl;
-        }
-        
-        // 处理键盘输入
-        int key = cv::waitKey(10);
-        if (key == 27) { // ESC键
-            running = false;
-        } else if (key == 's') { // 's'键保存图像
-            if (!frame.empty()) {
-                std::string filename = "camera_capture_" + 
-                    std::to_string(std::chrono::system_clock::now().time_since_epoch().count()) + ".jpg";
-                cv::imwrite(filename, frame);
-                std::cout << "图片已保存为：" << filename << std::endl;
+        try {
+            // 获取相机图像
+            if (camera.getFrame(frame)) {
+                if (!frame.empty()) {
+                    // 确保图像格式正确（BGR格式用于显示）
+                    cv::Mat displayFrame;
+                    if (frame.channels() == 1) {
+                        // 如果是灰度图，转换为BGR
+                        cv::cvtColor(frame, displayFrame, cv::COLOR_GRAY2BGR);
+                    } else {
+                        displayFrame = frame.clone();
+                    }
+                    
+                    // 调整图像大小以适应窗口（避免出现黑边）
+                    cv::resize(displayFrame, displayFrame, cv::Size(800, 600), 0, 0, cv::INTER_AREA);
+                    
+                    // 确保图像边界完整（添加边框以防止黑边）
+                    cv::copyMakeBorder(displayFrame, displayFrame, 1, 1, 1, 1, 
+                                      cv::BORDER_CONSTANT, cv::Scalar(240, 240, 240));
+
+                    // 装甲板检测部分
+                    std::string model_path = std::filesystem::absolute("../model/last.xml").string();
+                    if (std::filesystem::exists(model_path)) {
+                        static ArmorDetector armorDetector(model_path);
+                        static bool detector_initialized = false;
+                        
+                        if (!detector_initialized) {
+                            detector_initialized = armorDetector.init();
+                            if (!detector_initialized) {
+                                std::cerr << "装甲板检测器初始化失败" << std::endl;
+                            }
+                        }
+                        
+                        if (detector_initialized) {
+                            std::vector<Armor> armors;
+                            if (armorDetector.process(displayFrame, armors)) {
+                                // 可视化结果
+                                armorDetector.visualize(displayFrame, armors);
+                            }
+                        }
+                    }
+                    
+                    // 显示图像
+                    cv::imshow(windowName, displayFrame);
+                } else {
+                    std::cerr << "获取到空图像" << std::endl;
+                    // 显示背景，防止黑屏
+                    cv::imshow(windowName, background);
+                }
+            } else {
+                std::cerr << "获取图像失败" << std::endl;
+                // 显示背景，防止黑屏
+                cv::imshow(windowName, background);
             }
-        } else if (key == 'c') { // 'c'键保存配置
-            camera.saveParametersToConfig();
-            std::cout << "配置已保存" << std::endl;
+            
+            // 处理键盘输入
+            int key = cv::waitKey(10);
+            if (key == 27) { // ESC键
+                std::cout << "检测到ESC键，退出UI循环" << std::endl;
+                running = false;
+            } else if (key == 's') { // 's'键保存图像
+                if (!frame.empty()) {
+                    std::string filename = "camera_capture_" + 
+                        std::to_string(std::chrono::system_clock::now().time_since_epoch().count()) + ".jpg";
+                    cv::imwrite(filename, frame);
+                    std::cout << "图片已保存为：" << filename << std::endl;
+                }
+            } else if (key == 'c') { // 'c'键保存配置
+                camera.saveParametersToConfig();
+                std::cout << "配置已保存" << std::endl;
+            } else if (key == 'r') { // 'r'键刷新窗口
+                // 重新调整窗口大小，可能有助于解决显示问题
+                cv::resizeWindow(windowName, 800, 600);
+                if (!frame.empty()) {
+                    cv::imshow(windowName, frame);
+                } else {
+                    cv::imshow(windowName, background);
+                }
+                cv::waitKey(1);
+            }
+        }
+        catch (const cv::Exception& e) {
+            std::cerr << "UI循环中发生OpenCV异常: " << e.what() << std::endl;
+            std::cerr << "尝试恢复..." << std::endl;
+            std::this_thread::sleep_for(std::chrono::milliseconds(500));
         }
     }
     

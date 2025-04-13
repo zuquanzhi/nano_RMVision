@@ -3,6 +3,7 @@ project(simple_camera)
 
 # 查找OpenCV包
 find_package(OpenCV REQUIRED)
+find_package(OpenVINO REQUIRED)
 include_directories(${OpenCV_INCLUDE_DIRS})
 
 # 添加项目本地inc文件夹
@@ -30,4 +31,4 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wl,-rpath,${CMAKE_CURRENT_SOURCE_DIR}/l
 
 # 链接OpenCV库和相机SDK库
 # 直接链接到MVSDK库
-target_link_libraries(simple_camera ${OpenCV_LIBS} MVSDK)
+target_link_libraries(simple_camera PRIVATE ${OpenCV_LIBS} MVSDK openvino::runtime)
