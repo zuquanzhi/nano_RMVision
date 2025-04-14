@@ -116,10 +116,14 @@ int main(int argc, char* argv[]) {
             ArmorDetector armorDetector(model_path);
             armorDetector.init();
             
-            std::cout << "UI界面初始化完成" << std::endl;
+            // 启用装甲板角点优化
+            // armorDetector.enableCornerCorrection(true);
+            // std::cout << "装甲板角点优化已启用" << std::endl;
+            
+            // std::cout << "UI界面初始化完成" << std::endl;
             
             // 运行UI主循环
-            std::cout << "启动UI主循环，按'r'键可刷新解决黑框问题" << std::endl;
+            // std::cout << "启动UI主循环，按'r'键可刷新解决黑框问题" << std::endl;
             ui.run();
         }
         catch (const cv::Exception& e) {

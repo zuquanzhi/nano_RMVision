@@ -1,3 +1,6 @@
+#ifndef INFER_H
+#define INFER_H
+
 #include <openvino/openvino.hpp>
 #include <opencv2/opencv.hpp>
 #include <iostream>
@@ -219,3 +222,5 @@ inline void nms(float* result, float conf_thr, float iou_thr, std::vector<Armor>
         }
     }
 }
+
+#endif // INFER_H

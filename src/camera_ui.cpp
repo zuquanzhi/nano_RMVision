@@ -181,7 +181,7 @@ bool CameraUI::run() {
                         
                         if (detector_initialized) {
                             std::vector<Armor> armors;
-                            if (armorDetector.process(displayFrame, armors)) {
+                            if (armorDetector.process(displayFrame, armors, 0.5, 0.45, true)) {
                                 // 可视化结果
                                 armorDetector.visualize(displayFrame, armors);
                             }
