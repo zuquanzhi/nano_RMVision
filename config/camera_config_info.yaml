@@ -1,7 +1,8 @@
-# 相机配置文件 - 保存于 2025-04-14 22:05:00
+# 相机配置文件 - 保存于 2025-04-17 22:23:36
 
 # 相机基本状态
 camera_status: 1
+debug_status: 1
 
 # 分辨率设置
 resolution_width: 1280
@@ -24,3 +25,13 @@ auto_white_balance: 1        # 自动白平衡 (1=开启, 0=关闭)
 r_gain: 101                   # 红色增益 (0-400)
 g_gain: 102                   # 绿色增益 (0-400)
 b_gain: 105                  # 蓝色增益 (0-400)
+
+# 角点优化参数
+corner_optimization: 1       # 角点优化 (1=开启, 0=关闭)
+ROI_EXPAND_RATIO: 0.67        # ROI扩展比例 (0.1-1.0)
+LENGTH_EXTEND_FACTOR: 1.40      # 灯条长度扩展系数 (1.0-3.0)
+MIN_CONTOUR_POINTS: 4        # 最小轮廓点数 (3-20)
+MAX_DEVIATION_RATIO: 1.00      # 最大偏差比例 (0.5-1.0)
+MIN_LIGHTBAR_RATIO: 5.00       # 最小灯条比例 (1.0-5.0)
+BRIGHTNESS_PERCENTILE: 0.20    # 亮度百分位阈值 (0.01-0.2)
+COLOR_WEIGHT: 0.00           # 颜色权重 (0.0-1.0)

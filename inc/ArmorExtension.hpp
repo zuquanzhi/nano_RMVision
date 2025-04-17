@@ -47,22 +47,30 @@ public:
     }
     
     // 角点修正函数
-    bool correct_promote(cv::Mat &src) {
+    bool correct_promote(cv::Mat &src , const float ROI_EXPAND_RATIO = 0.6f,
+                         const float LENGTH_EXTEND_FACTOR = 1.7f,
+                         const int MIN_CONTOUR_POINTS = 6,
+                         const float MAX_DEVIATION_RATIO = 0.95f,
+                         const float MIN_LIGHTBAR_RATIO = 2.0f,
+                         const float BRIGHTNESS_PERCENTILE = 0.05f,
+                         const float COLOR_WEIGHT = 0.1f,
+                         const bool debug = false,
+                         // 角点验证参数 - 已根据实际装甲板特性调整
+                         const float MIN_ASPECT_RATIO = 2.0f,         // 最小宽高比，适应实际约2.8的比例
+                         const float MAX_ASPECT_RATIO = 5.0f,          
+                         const float PARALLEL_TOLERANCE_DEG = 8.0f,    // 平行度容差(度)，放宽容差
+                         const float MIN_EDGE_RATIO = 0.85f,           // 最小对边长度比，适应约0.96的实际比例
+                         const float MAX_EDGE_RATIO = 1.2f,            
+                         const float MIN_DIAG_RATIO = 0.85f,           // 最小对角线比，放宽容差
+                         const float MAX_DIAG_RATIO = 1.2f,           
+                         const float MIN_AREA_RATIO = 0.7f,            // 最小面积比
+                         const float MAX_AREA_RATIO = 1.3f             // 最大面积比
+                        ) {
         // 原始坐标备份
         const std::array<cv::Point2f, 4> orig_corners = {
             cv::Point2f(x[0], y[0]), cv::Point2f(x[1], y[1]),
             cv::Point2f(x[2], y[2]), cv::Point2f(x[3], y[3])
         };
-
-        // 配置参数
-        const float ROI_EXPAND_RATIO = 0.6f;    // ROI宽度扩展比例
-        const float LENGTH_EXTEND_FACTOR = 1.7f; // 灯条长度扩展比例
-        const int MIN_CONTOUR_POINTS = 6;        // 最小轮廓点数
-        const float MAX_DEVIATION_RATIO = 0.85f;  // 最大偏差比例
-        const float MIN_LIGHTBAR_RATIO = 2.0f;   // 最小灯条宽高比
-        const float BRIGHTNESS_PERCENTILE = 0.05f; // 亮度百分位阈值
-        const float COLOR_WEIGHT = 0.1f;         // 颜色权重
-        const bool debug = true;                 // 调试模式
 
         cv::Mat debug_visual;
         if (debug) {
@@ -208,11 +216,12 @@ public:
             float height = (cv::norm(new_corners[0] - new_corners[1]) + cv::norm(new_corners[3] - new_corners[2])) / 2;
             float aspect_ratio = width / height;
             
-            // 装甲板宽高比应在合理范围内 (小装甲板约1.5-2.5，大装甲板约3.5-4.5)
-            if (aspect_ratio < 1.0 || aspect_ratio > 5.0) {
+            // 装甲板宽高比应在合理范围内 (使用可配置参数)
+            if (aspect_ratio < MIN_ASPECT_RATIO || aspect_ratio > MAX_ASPECT_RATIO) {
                 valid_corners = false;
                 if (debug) {
-                    std::cout << "装甲板宽高比不合理: " << aspect_ratio << std::endl;
+                    std::cout << "装甲板宽高比不合理: " << aspect_ratio << " (允许范围: " 
+                              << MIN_ASPECT_RATIO << "-" << MAX_ASPECT_RATIO << ")" << std::endl;
                 }
             }
             
@@ -233,8 +242,8 @@ public:
             float top_bottom_parallel = std::abs(top_dir.dot(bottom_dir));
             float left_right_parallel = std::abs(left_dir.dot(right_dir));
 
-            // 按3度的容差检查 (cos(3°) ≈ 0.9986)
-            const float MIN_PARALLEL_SCORE = 0.9986; // 3度平行度阈值
+            // 根据平行度容差(度)计算阈值
+            const float MIN_PARALLEL_SCORE = std::cos(PARALLEL_TOLERANCE_DEG * CV_PI / 180.0f);
 
             // 验证平行度
             bool parallel_valid = (top_bottom_parallel >= MIN_PARALLEL_SCORE && 
@@ -245,11 +254,12 @@ public:
                 if (debug) {
                     std::cout << "边缘平行度检查失败: 上下平行度=" << top_bottom_parallel 
                             << ", 左右平行度=" << left_right_parallel
-                            << " (阈值: " << MIN_PARALLEL_SCORE << ")" << std::endl;
+                            << " (阈值: " << MIN_PARALLEL_SCORE << ", 容差: " 
+                            << PARALLEL_TOLERANCE_DEG << "度)" << std::endl;
                 }
             }
             
-            // 3. 检查四边形是否接近矩形
+            // 3. 检查四边形是否接近平行四边形
             float top_len = cv::norm(new_corners[0] - new_corners[3]);
             float bottom_len = cv::norm(new_corners[1] - new_corners[2]);
             float left_len = cv::norm(new_corners[0] - new_corners[1]);
@@ -259,11 +269,13 @@ public:
             float top_bottom_ratio = top_len / bottom_len;
             float left_right_ratio = left_len / right_len;
             
-            if (top_bottom_ratio < 0.8 || top_bottom_ratio > 1.2 ||
-                left_right_ratio < 0.8 || left_right_ratio > 1.2) {
+            if (top_bottom_ratio < MIN_EDGE_RATIO || top_bottom_ratio > MAX_EDGE_RATIO ||
+                left_right_ratio < MIN_EDGE_RATIO || left_right_ratio > MAX_EDGE_RATIO) {
                 valid_corners = false;
                 if (debug) {
-                    std::cout << "装甲板对边长度不匹配: " << "上下比 = " << top_bottom_ratio << ", 左右比 = " << left_right_ratio << std::endl;
+                    std::cout << "装甲板对边长度不匹配: " << "上下比 = " << top_bottom_ratio 
+                              << ", 左右比 = " << left_right_ratio 
+                              << " (允许范围: " << MIN_EDGE_RATIO << "-" << MAX_EDGE_RATIO << ")" << std::endl;
                 }
             }
             
@@ -272,10 +284,11 @@ public:
             float diag2 = cv::norm(new_corners[1] - new_corners[3]);
             float diag_ratio = diag1 / diag2;
             
-            if (diag_ratio < 0.8 || diag_ratio > 1.2) {
+            if (diag_ratio < MIN_DIAG_RATIO || diag_ratio > MAX_DIAG_RATIO) {
                 valid_corners = false;
                 if (debug) {
-                    std::cout << "装甲板对角线长度不匹配: " << diag_ratio << std::endl;
+                    std::cout << "装甲板对角线长度不匹配: " << diag_ratio 
+                              << " (允许范围: " << MIN_DIAG_RATIO << "-" << MAX_DIAG_RATIO << ")" << std::endl;
                 }
             }
             
@@ -284,10 +297,11 @@ public:
             float new_area = cv::contourArea(new_corners);
             float area_ratio = new_area / orig_area;
             
-            if (area_ratio < 0.7 || area_ratio > 1.3) {
+            if (area_ratio < MIN_AREA_RATIO || area_ratio > MAX_AREA_RATIO) {
                 valid_corners = false;
                 if (debug) {
-                    std::cout << "装甲板面积变化过大: " << area_ratio << std::endl;
+                    std::cout << "装甲板面积变化过大: " << area_ratio 
+                              << " (允许范围: " << MIN_AREA_RATIO << "-" << MAX_AREA_RATIO << ")" << std::endl;
                 }
             }
             

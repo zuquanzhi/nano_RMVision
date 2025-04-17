@@ -4,6 +4,7 @@
 #include <openvino/openvino.hpp>
 #include "infer.h"
 #include "ArmorExtension.hpp"
+#include "ConfigManager.h"
 
 // 模型推理处理类
 class ArmorDetector {
@@ -17,10 +18,231 @@ private:
     bool enable_corner_correction;
     bool debug_mode;
     
+    // 角点优化参数 - 从配置文件中读取
+    float ROI_EXPAND_RATIO;
+    float LENGTH_EXTEND_FACTOR;
+    int MIN_CONTOUR_POINTS;
+    float MAX_DEVIATION_RATIO;
+    float MIN_LIGHTBAR_RATIO;
+    float BRIGHTNESS_PERCENTILE;
+    float COLOR_WEIGHT;
+    
+    // 角点验证参数 - 从配置文件中读取
+    float MIN_ASPECT_RATIO;
+    float MAX_ASPECT_RATIO;
+    float PARALLEL_TOLERANCE_DEG;
+    float MIN_EDGE_RATIO;
+    float MAX_EDGE_RATIO;
+    float MIN_DIAG_RATIO;
+    float MAX_DIAG_RATIO;
+    float MIN_AREA_RATIO;
+    float MAX_AREA_RATIO;
+    
 public:
     // 构造函数
-    ArmorDetector(const std::string& model_path) 
-    : model_path(model_path), enable_corner_correction(false), debug_mode(false) {}
+    ArmorDetector(const std::string& model_path, ConfigManager* configManager = nullptr) 
+    : model_path(model_path), enable_corner_correction(false), debug_mode(false) {
+        // 默认角点优化参数值
+        ROI_EXPAND_RATIO = 0.6f;
+        LENGTH_EXTEND_FACTOR = 1.7f;
+        MIN_CONTOUR_POINTS = 6;
+        MAX_DEVIATION_RATIO = 0.95f;
+        MIN_LIGHTBAR_RATIO = 2.0f;
+        BRIGHTNESS_PERCENTILE = 0.05f;
+        COLOR_WEIGHT = 0.1f;
+        
+        // 默认角点验证参数值
+        MIN_ASPECT_RATIO = 1.0f;
+        MAX_ASPECT_RATIO = 5.0f;
+        PARALLEL_TOLERANCE_DEG = 3.0f;
+        MIN_EDGE_RATIO = 0.8f;
+        MAX_EDGE_RATIO = 1.2f;
+        MIN_DIAG_RATIO = 0.8f;
+        MAX_DIAG_RATIO = 1.2f;
+        MIN_AREA_RATIO = 0.7f;
+        MAX_AREA_RATIO = 1.3f;
+        
+        // 如果提供了配置管理器，则从配置中加载参数
+        if (configManager != nullptr) {
+            loadConfig(configManager);
+        }
+    }
+    
+    // 从配置管理器读取参数
+    void loadConfig(ConfigManager* configManager) {
+        if (!configManager) return;
+        
+        bool corner_optimization;
+        if (configManager->readBool("corner_optimization", corner_optimization)) {
+            enable_corner_correction = corner_optimization;
+        }
+        
+        double value;
+        // 读取角点优化基本参数
+        if (configManager->readDouble("ROI_EXPAND_RATIO", value)) {
+            ROI_EXPAND_RATIO = static_cast<float>(value);
+        }
+        
+        if (configManager->readDouble("LENGTH_EXTEND_FACTOR", value)) {
+            LENGTH_EXTEND_FACTOR = static_cast<float>(value);
+        }
+        
+        int int_value;
+        if (configManager->readInt("MIN_CONTOUR_POINTS", int_value)) {
+            MIN_CONTOUR_POINTS = int_value;
+        }
+        
+        if (configManager->readDouble("MAX_DEVIATION_RATIO", value)) {
+            MAX_DEVIATION_RATIO = static_cast<float>(value);
+        }
+        
+        if (configManager->readDouble("MIN_LIGHTBAR_RATIO", value)) {
+            MIN_LIGHTBAR_RATIO = static_cast<float>(value);
+        }
+        
+        if (configManager->readDouble("BRIGHTNESS_PERCENTILE", value)) {
+            BRIGHTNESS_PERCENTILE = static_cast<float>(value);
+        }
+        
+        if (configManager->readDouble("COLOR_WEIGHT", value)) {
+            COLOR_WEIGHT = static_cast<float>(value);
+        }
+        
+        // 读取角点验证参数
+        if (configManager->readDouble("MIN_ASPECT_RATIO", value)) {
+            MIN_ASPECT_RATIO = static_cast<float>(value);
+        }
+        
+        if (configManager->readDouble("MAX_ASPECT_RATIO", value)) {
+            MAX_ASPECT_RATIO = static_cast<float>(value);
+        }
+        
+        if (configManager->readDouble("PARALLEL_TOLERANCE_DEG", value)) {
+            PARALLEL_TOLERANCE_DEG = static_cast<float>(value);
+        }
+        
+        if (configManager->readDouble("MIN_EDGE_RATIO", value)) {
+            MIN_EDGE_RATIO = static_cast<float>(value);
+        }
+        
+        if (configManager->readDouble("MAX_EDGE_RATIO", value)) {
+            MAX_EDGE_RATIO = static_cast<float>(value);
+        }
+        
+        if (configManager->readDouble("MIN_DIAG_RATIO", value)) {
+            MIN_DIAG_RATIO = static_cast<float>(value);
+        }
+        
+        if (configManager->readDouble("MAX_DIAG_RATIO", value)) {
+            MAX_DIAG_RATIO = static_cast<float>(value);
+        }
+        
+        if (configManager->readDouble("MIN_AREA_RATIO", value)) {
+            MIN_AREA_RATIO = static_cast<float>(value);
+        }
+        
+        if (configManager->readDouble("MAX_AREA_RATIO", value)) {
+            MAX_AREA_RATIO = static_cast<float>(value);
+        }
+        
+        if (configManager->readInt("debug_status", int_value)) {
+            debug_mode = (int_value == 1);
+        }
+        
+        std::cout << "角点优化配置已加载: " 
+                  << "启用=" << (enable_corner_correction ? "是" : "否") 
+                  << ", ROI扩展比例=" << ROI_EXPAND_RATIO
+                  << ", 灯条扩展系数=" << LENGTH_EXTEND_FACTOR
+                  << ", 最小轮廓点数=" << MIN_CONTOUR_POINTS
+                  << ", 最大偏差比例=" << MAX_DEVIATION_RATIO
+                  << ", 最小灯条比例=" << MIN_LIGHTBAR_RATIO
+                  << ", 亮度百分位阈值=" << BRIGHTNESS_PERCENTILE
+                  << ", 颜色权重=" << COLOR_WEIGHT
+                  << std::endl;
+        
+        std::cout << "角点验证参数已加载: "
+                  << "宽高比范围=" << MIN_ASPECT_RATIO << "-" << MAX_ASPECT_RATIO
+                  << ", 平行度容差=" << PARALLEL_TOLERANCE_DEG << "度"
+                  << ", 对边长度比范围=" << MIN_EDGE_RATIO << "-" << MAX_EDGE_RATIO
+                  << ", 对角线比范围=" << MIN_DIAG_RATIO << "-" << MAX_DIAG_RATIO
+                  << ", 面积比范围=" << MIN_AREA_RATIO << "-" << MAX_AREA_RATIO
+                  << ", 调试模式=" << (debug_mode ? "开启" : "关闭")
+                  << std::endl;
+    }
+    
+    // 设置单个角点优化参数
+    void setROIExpandRatio(float value) { ROI_EXPAND_RATIO = value; }
+    void setLengthExtendFactor(float value) { LENGTH_EXTEND_FACTOR = value; }
+    void setMinContourPoints(int value) { MIN_CONTOUR_POINTS = value; }
+    void setMaxDeviationRatio(float value) { MAX_DEVIATION_RATIO = value; }
+    void setMinLightbarRatio(float value) { MIN_LIGHTBAR_RATIO = value; }
+    void setBrightnessPercentile(float value) { BRIGHTNESS_PERCENTILE = value; }
+    void setColorWeight(float value) { COLOR_WEIGHT = value; }
+    
+    // 设置角点验证参数
+    void setMinAspectRatio(float value) { MIN_ASPECT_RATIO = value; }
+    void setMaxAspectRatio(float value) { MAX_ASPECT_RATIO = value; }
+    void setParallelToleranceDeg(float value) { PARALLEL_TOLERANCE_DEG = value; }
+    void setMinEdgeRatio(float value) { MIN_EDGE_RATIO = value; }
+    void setMaxEdgeRatio(float value) { MAX_EDGE_RATIO = value; }
+    void setMinDiagRatio(float value) { MIN_DIAG_RATIO = value; }
+    void setMaxDiagRatio(float value) { MAX_DIAG_RATIO = value; }
+    void setMinAreaRatio(float value) { MIN_AREA_RATIO = value; }
+    void setMaxAreaRatio(float value) { MAX_AREA_RATIO = value; }
+    
+    // 获取角点优化参数
+    float getROIExpandRatio() const { return ROI_EXPAND_RATIO; }
+    float getLengthExtendFactor() const { return LENGTH_EXTEND_FACTOR; }
+    int getMinContourPoints() const { return MIN_CONTOUR_POINTS; }
+    float getMaxDeviationRatio() const { return MAX_DEVIATION_RATIO; }
+    float getMinLightbarRatio() const { return MIN_LIGHTBAR_RATIO; }
+    float getBrightnessPercentile() const { return BRIGHTNESS_PERCENTILE; }
+    float getColorWeight() const { return COLOR_WEIGHT; }
+    
+    // 获取角点验证参数
+    float getMinAspectRatio() const { return MIN_ASPECT_RATIO; }
+    float getMaxAspectRatio() const { return MAX_ASPECT_RATIO; }
+    float getParallelToleranceDeg() const { return PARALLEL_TOLERANCE_DEG; }
+    float getMinEdgeRatio() const { return MIN_EDGE_RATIO; }
+    float getMaxEdgeRatio() const { return MAX_EDGE_RATIO; }
+    float getMinDiagRatio() const { return MIN_DIAG_RATIO; }
+    float getMaxDiagRatio() const { return MAX_DIAG_RATIO; }
+    float getMinAreaRatio() const { return MIN_AREA_RATIO; }
+    float getMaxAreaRatio() const { return MAX_AREA_RATIO; }
+    
+    bool isCornerCorrectionEnabled() const { return enable_corner_correction; }
+    bool isDebugModeEnabled() const { return debug_mode; }
+    
+    // 更新配置参数
+    void updateConfig(ConfigManager* configManager) {
+        if (!configManager) return;
+        
+        // 保存角点优化基本参数
+        configManager->writeBool("corner_optimization", enable_corner_correction);
+        configManager->writeDouble("ROI_EXPAND_RATIO", ROI_EXPAND_RATIO);
+        configManager->writeDouble("LENGTH_EXTEND_FACTOR", LENGTH_EXTEND_FACTOR);
+        configManager->writeInt("MIN_CONTOUR_POINTS", MIN_CONTOUR_POINTS);
+        configManager->writeDouble("MAX_DEVIATION_RATIO", MAX_DEVIATION_RATIO);
+        configManager->writeDouble("MIN_LIGHTBAR_RATIO", MIN_LIGHTBAR_RATIO);
+        configManager->writeDouble("BRIGHTNESS_PERCENTILE", BRIGHTNESS_PERCENTILE);
+        configManager->writeDouble("COLOR_WEIGHT", COLOR_WEIGHT);
+        
+        // 保存角点验证参数
+        configManager->writeDouble("MIN_ASPECT_RATIO", MIN_ASPECT_RATIO);
+        configManager->writeDouble("MAX_ASPECT_RATIO", MAX_ASPECT_RATIO);
+        configManager->writeDouble("PARALLEL_TOLERANCE_DEG", PARALLEL_TOLERANCE_DEG);
+        configManager->writeDouble("MIN_EDGE_RATIO", MIN_EDGE_RATIO);
+        configManager->writeDouble("MAX_EDGE_RATIO", MAX_EDGE_RATIO);
+        configManager->writeDouble("MIN_DIAG_RATIO", MIN_DIAG_RATIO);
+        configManager->writeDouble("MAX_DIAG_RATIO", MAX_DIAG_RATIO);
+        configManager->writeDouble("MIN_AREA_RATIO", MIN_AREA_RATIO);
+        configManager->writeDouble("MAX_AREA_RATIO", MAX_AREA_RATIO);
+        
+        configManager->writeInt("debug_status", debug_mode ? 1 : 0);
+        
+        // 保存更新后的配置
+        configManager->saveConfig();
+    }
     
     // 初始化模型
     bool init() {
@@ -246,8 +468,28 @@ private:
             armor_ext.score = armor.score;
             armor_ext.label = armor.label;
             
-            // 执行角点优化
-            bool correction_success = armor_ext.correct_promote(original_scale_image);
+            // 使用从配置文件加载的所有参数执行角点优化（包括验证参数）
+            bool correction_success = armor_ext.correct_promote(
+                original_scale_image,
+                ROI_EXPAND_RATIO,
+                LENGTH_EXTEND_FACTOR,
+                MIN_CONTOUR_POINTS,
+                MAX_DEVIATION_RATIO,
+                MIN_LIGHTBAR_RATIO,
+                BRIGHTNESS_PERCENTILE,
+                COLOR_WEIGHT,
+                debug_mode,
+                // 添加角点验证参数
+                MIN_ASPECT_RATIO,
+                MAX_ASPECT_RATIO,
+                PARALLEL_TOLERANCE_DEG,
+                MIN_EDGE_RATIO,
+                MAX_EDGE_RATIO,
+                MIN_DIAG_RATIO,
+                MAX_DIAG_RATIO,
+                MIN_AREA_RATIO,
+                MAX_AREA_RATIO
+            );
             
             // 如果角点优化成功，则映射回处理后的坐标
             if (correction_success) {

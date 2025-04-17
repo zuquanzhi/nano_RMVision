@@ -81,6 +81,9 @@ public:
     int getBGain() const { return b_gain; }
     bool getAutoExposure() const { return auto_exposure; }
     bool getAutoWhiteBalance() const { return auto_wb; }
+    
+    // 新增：获取配置管理器指针 - 供角点优化UI使用
+    ConfigManager* getConfigManager() { return &config_manager; }
 };
 
 #endif // SIMPLE_CAMERA_H

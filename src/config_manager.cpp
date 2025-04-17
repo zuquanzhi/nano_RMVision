@@ -43,6 +43,7 @@ ConfigManager::ConfigManager(const std::string& path)
 void ConfigManager::setDefaultValues() {
     // 相机基本状态
     intValues["camera_status"] = 1;
+    intValues["debug_status"] = 0;
     
     // 分辨率设置
     intValues["resolution_width"] = 1280;
@@ -65,6 +66,16 @@ void ConfigManager::setDefaultValues() {
     intValues["r_gain"] = 80;
     intValues["g_gain"] = 76;
     intValues["b_gain"] = 110;
+    
+    // 角点优化参数
+    boolValues["corner_optimization"] = true;
+    doubleValues["ROI_EXPAND_RATIO"] = 0.6;
+    doubleValues["LENGTH_EXTEND_FACTOR"] = 1.7;
+    intValues["MIN_CONTOUR_POINTS"] = 6;
+    doubleValues["MAX_DEVIATION_RATIO"] = 0.95;
+    doubleValues["MIN_LIGHTBAR_RATIO"] = 2.0;
+    doubleValues["BRIGHTNESS_PERCENTILE"] = 0.05;
+    doubleValues["COLOR_WEIGHT"] = 0.1;
 }
 
 // 获取当前时间字符串
@@ -229,7 +240,8 @@ bool ConfigManager::saveConfig() {
         
         // 基本状态
         file << "# 相机基本状态\n";
-        file << "camera_status: " << intValues["camera_status"] << "\n\n";
+        file << "camera_status: " << intValues["camera_status"] << "\n";
+        file << "debug_status: " << intValues["debug_status"] << "\n\n";
         
         // 分辨率设置
         file << "# 分辨率设置\n";
@@ -269,7 +281,32 @@ bool ConfigManager::saveConfig() {
         file << "g_gain: " << intValues["g_gain"] 
              << "                   # 绿色增益 (0-400)\n";
         file << "b_gain: " << intValues["b_gain"] 
-             << "                  # 蓝色增益 (0-400)\n";
+             << "                  # 蓝色增益 (0-400)\n\n";
+        
+        // 角点优化参数
+        file << "# 角点优化参数\n";
+        file << "corner_optimization: " << (boolValues["corner_optimization"] ? 1 : 0) 
+             << "       # 角点优化 (1=开启, 0=关闭)\n";
+        file << "ROI_EXPAND_RATIO: " << std::fixed << std::setprecision(2) 
+             << doubleValues["ROI_EXPAND_RATIO"] 
+             << "        # ROI扩展比例 (0.1-1.0)\n";
+        file << "LENGTH_EXTEND_FACTOR: " << std::fixed << std::setprecision(2) 
+             << doubleValues["LENGTH_EXTEND_FACTOR"] 
+             << "      # 灯条长度扩展系数 (1.0-3.0)\n";
+        file << "MIN_CONTOUR_POINTS: " << intValues["MIN_CONTOUR_POINTS"] 
+             << "        # 最小轮廓点数 (3-20)\n";
+        file << "MAX_DEVIATION_RATIO: " << std::fixed << std::setprecision(2) 
+             << doubleValues["MAX_DEVIATION_RATIO"] 
+             << "      # 最大偏差比例 (0.5-1.0)\n";
+        file << "MIN_LIGHTBAR_RATIO: " << std::fixed << std::setprecision(2) 
+             << doubleValues["MIN_LIGHTBAR_RATIO"] 
+             << "       # 最小灯条比例 (1.0-5.0)\n";
+        file << "BRIGHTNESS_PERCENTILE: " << std::fixed << std::setprecision(2) 
+             << doubleValues["BRIGHTNESS_PERCENTILE"] 
+             << "    # 亮度百分位阈值 (0.01-0.2)\n";
+        file << "COLOR_WEIGHT: " << std::fixed << std::setprecision(2) 
+             << doubleValues["COLOR_WEIGHT"] 
+             << "           # 颜色权重 (0.0-1.0)\n";
         
         file.close();
         
