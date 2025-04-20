@@ -59,7 +59,7 @@ public:
                          const float MIN_ASPECT_RATIO = 2.0f,         // 最小宽高比，适应实际约2.8的比例
                          const float MAX_ASPECT_RATIO = 5.0f,          
                          const float PARALLEL_TOLERANCE_DEG = 8.0f,    // 平行度容差(度)，放宽容差
-                         const float MIN_EDGE_RATIO = 0.85f,           // 最小对边长度比，适应约0.96的实际比例
+                         const float MIN_EDGE_RATIO = 0.69f,           // 最小对边长度比，适应约0.96的实际比例
                          const float MAX_EDGE_RATIO = 1.2f,            
                          const float MIN_DIAG_RATIO = 0.85f,           // 最小对角线比，放宽容差
                          const float MAX_DIAG_RATIO = 1.2f,           
@@ -144,18 +144,26 @@ public:
             uchar threshold = pixels[nth];
             cv::threshold(gray, binary_bright, threshold, 255, cv::THRESH_BINARY);
 
+
             // 基于红蓝差值的二值化
             std::vector<cv::Mat> channels;
             cv::split(roi_img, channels); // 分离通道
-            cv::Mat red_blue_diff;
-            cv::subtract(channels[2], channels[0], red_blue_diff); // 计算红色和蓝色通道的差值
-            cv::normalize(red_blue_diff, red_blue_diff, 0, 255, cv::NORM_MINMAX);
-            cv::Mat binary_color;
-            cv::threshold(red_blue_diff, binary_color, 128, 255, cv::THRESH_BINARY);
+            cv::Mat blue_binary, red_binary, binary_color;
+            cv::threshold(channels[0], blue_binary, 128, 255, cv::THRESH_BINARY); // 蓝色二值化
+            cv::threshold(channels[2], red_binary, 128, 255, cv::THRESH_BINARY); // 红色二值化
+            cv::bitwise_or(blue_binary, red_binary, binary_color); // 合并红蓝二值图
 
             // 结合两种二值化结果
             cv::Mat binary_combined;
             cv::addWeighted(binary_bright, COLOR_WEIGHT, binary_color, 1 - COLOR_WEIGHT, 0, binary_combined);
+
+            // 轮廓检测
+            // std::vector<std::vector<cv::Point>> contours;
+            // cv::findContours(binary_combined, contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
+
+
+            cv::Mat kernel = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(3, 3));
+            cv::morphologyEx(binary_combined, binary_combined, cv::MORPH_OPEN, kernel);
 
             // 轮廓检测
             std::vector<std::vector<cv::Point>> contours;
@@ -226,38 +234,38 @@ public:
             }
             
             // 2.检查四条边的平行度
-            // 获取四条边的方向向量
-            cv::Vec2f top_dir = new_corners[3] - new_corners[0];
-            cv::Vec2f bottom_dir = new_corners[2] - new_corners[1];
-            cv::Vec2f left_dir = new_corners[1] - new_corners[0];
-            cv::Vec2f right_dir = new_corners[2] - new_corners[3];
+            // // 获取四条边的方向向量
+            // cv::Vec2f top_dir = new_corners[3] - new_corners[0];
+            // cv::Vec2f bottom_dir = new_corners[2] - new_corners[1];
+            // cv::Vec2f left_dir = new_corners[1] - new_corners[0];
+            // cv::Vec2f right_dir = new_corners[2] - new_corners[3];
 
-            // 归一化向量
-            top_dir = top_dir / cv::norm(top_dir);
-            bottom_dir = bottom_dir / cv::norm(bottom_dir);
-            left_dir = left_dir / cv::norm(left_dir);
-            right_dir = right_dir / cv::norm(right_dir);
+            // // 归一化向量
+            // top_dir = top_dir / cv::norm(top_dir);
+            // bottom_dir = bottom_dir / cv::norm(bottom_dir);
+            // left_dir = left_dir / cv::norm(left_dir);
+            // right_dir = right_dir / cv::norm(right_dir);
 
-            // 计算相对方向的平行度分数（绝对值表示平行度，1表示完全平行，0表示垂直）
-            float top_bottom_parallel = std::abs(top_dir.dot(bottom_dir));
-            float left_right_parallel = std::abs(left_dir.dot(right_dir));
+            // // 计算相对方向的平行度分数（绝对值表示平行度，1表示完全平行，0表示垂直）
+            // float top_bottom_parallel = std::abs(top_dir.dot(bottom_dir));
+            // float left_right_parallel = std::abs(left_dir.dot(right_dir));
 
-            // 根据平行度容差(度)计算阈值
-            const float MIN_PARALLEL_SCORE = std::cos(PARALLEL_TOLERANCE_DEG * CV_PI / 180.0f);
+            // // 根据平行度容差(度)计算阈值
+            // const float MIN_PARALLEL_SCORE = std::cos(PARALLEL_TOLERANCE_DEG * CV_PI / 180.0f);
 
-            // 验证平行度
-            bool parallel_valid = (top_bottom_parallel >= MIN_PARALLEL_SCORE && 
-                                left_right_parallel >= MIN_PARALLEL_SCORE);
+            // // 验证平行度
+            // bool parallel_valid = (top_bottom_parallel >= MIN_PARALLEL_SCORE && 
+            //                     left_right_parallel >= MIN_PARALLEL_SCORE);
 
-            if (!parallel_valid) {
-                valid_corners = false;
-                if (debug) {
-                    std::cout << "边缘平行度检查失败: 上下平行度=" << top_bottom_parallel 
-                            << ", 左右平行度=" << left_right_parallel
-                            << " (阈值: " << MIN_PARALLEL_SCORE << ", 容差: " 
-                            << PARALLEL_TOLERANCE_DEG << "度)" << std::endl;
-                }
-            }
+            // if (!parallel_valid) {
+            //     valid_corners = false;
+            //     if (debug) {
+            //         std::cout << "边缘平行度检查失败: 上下平行度=" << top_bottom_parallel 
+            //                 << ", 左右平行度=" << left_right_parallel
+            //                 << " (阈值: " << MIN_PARALLEL_SCORE << ", 容差: " 
+            //                 << PARALLEL_TOLERANCE_DEG << "度)" << std::endl;
+            //     }
+            // }
             
             // 3. 检查四边形是否接近平行四边形
             float top_len = cv::norm(new_corners[0] - new_corners[3]);
