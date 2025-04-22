@@ -3,6 +3,8 @@
 #include <chrono>
 #include <thread>
 #include <ArmorDetect.hpp>
+#include <ctime>
+#include <iomanip> // 用于设置小数点精度
 
 // 构造函数
 CameraUI::CameraUI(SimpleCamera& cam, const std::string& name)
@@ -137,14 +139,18 @@ bool CameraUI::run() {
     cv::Mat frame;
     
     std::cout << "UI主循环开始运行..." << std::endl;
-    
+
     // 创建背景图像
     cv::Mat background(600, 800, CV_8UC3, cv::Scalar(240, 240, 240));
     cv::putText(background, "等待相机图像...", cv::Point(250, 300), 
                 cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 0, 0), 2);
     cv::imshow(windowName, background);
     cv::waitKey(1);  // 刷新显示
-    
+
+    auto last_time = std::chrono::high_resolution_clock::now();
+    int frame_count = 0;
+    double fps = 0.0;
+
     while (running) {
         try {
             // 获取相机图像
@@ -187,7 +193,23 @@ bool CameraUI::run() {
                             }
                         }
                     }
-                    
+
+                    // 计算帧率
+                    frame_count++;
+                    auto current_time = std::chrono::high_resolution_clock::now();
+                    std::chrono::duration<double> elapsed = current_time - last_time;
+                    if (elapsed.count() >= 1.0) {
+                        fps = frame_count / elapsed.count();
+                        frame_count = 0;
+                        last_time = current_time;
+                    }
+
+                    // 在图像上显示帧率
+                    std::ostringstream fps_text;
+                    fps_text << std::fixed << std::setprecision(1) << "FPS: " << fps;
+                    cv::putText(displayFrame, fps_text.str(), cv::Point(10, 30), 
+                                cv::FONT_HERSHEY_SIMPLEX, 1.0, cv::Scalar(0, 255, 0), 2);
+
                     // 显示图像
                     cv::imshow(windowName, displayFrame);
                 } else {
