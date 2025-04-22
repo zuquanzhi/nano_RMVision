@@ -18,6 +18,19 @@ if(SDK_LIBS)
   message(STATUS "Found SDK libraries: ${SDK_LIBS}")
 endif()
 
+# Set the build type to Release for optimization
+if(NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE Release CACHE STRING "Build type" FORCE)
+endif()
+
+# Enable compiler optimizations
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -march=native")
+
+# Enable parallel compilation if supported
+if(CMAKE_GENERATOR MATCHES "Makefiles|Ninja")
+    set(CMAKE_BUILD_FLAGS "-j$(nproc)")
+endif()
+
 # 添加所有源文件到可执行文件
 add_executable(simple_camera 
     src/main.cpp
