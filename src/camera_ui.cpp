@@ -201,6 +201,14 @@ bool CameraUI::run() {
                             auto end_time = std::chrono::high_resolution_clock::now();
                             std::chrono::duration<double, std::milli> inference_time = end_time - start_time;
 
+                            fps = 1000.0 / inference_time.count();
+
+                            // 在图像上显示帧率
+                            std::ostringstream fps_text;
+                            fps_text << std::fixed << std::setprecision(1) << "FPS: " << fps;
+                            cv::putText(displayFrame, fps_text.str(), cv::Point(10, 30), 
+                                        cv::FONT_HERSHEY_SIMPLEX, 1.0, cv::Scalar(0, 255, 0), 2);
+
                             // 在图像上显示推理耗时
                             std::ostringstream inference_text;
                             inference_text << "Inference: " << inference_time.count() << " ms";
@@ -209,21 +217,6 @@ bool CameraUI::run() {
                         }
                     }
 
-                    // 修改帧率计算逻辑，降低精度
-                    frame_count++;
-                    auto current_time = std::chrono::high_resolution_clock::now();
-                    std::chrono::duration<double> elapsed = current_time - last_time;
-                    if (elapsed.count() >= 1.0) {
-                        fps = static_cast<int>(frame_count / elapsed.count() + 0.5); // 四舍五入为整数
-                        frame_count = 0;
-                        last_time = current_time;
-                    }
-
-                    // 在图像上显示帧率
-                    std::ostringstream fps_text;
-                    fps_text << std::fixed << std::setprecision(1) << "FPS: " << fps;
-                    cv::putText(displayFrame, fps_text.str(), cv::Point(10, 30), 
-                                cv::FONT_HERSHEY_SIMPLEX, 1.0, cv::Scalar(0, 255, 0), 2);
 
                     // 显示图像
                     cv::imshow(windowName, displayFrame);
