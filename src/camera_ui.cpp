@@ -187,19 +187,34 @@ bool CameraUI::run() {
                         
                         if (detector_initialized) {
                             std::vector<Armor> armors;
+                            
+                            // 修改帧率计算逻辑，直接计算每次推理的耗费时间
+                            auto start_time = std::chrono::high_resolution_clock::now();
+
+                            // 推理代码部分
                             if (armorDetector.process(displayFrame, armors)) {
                                 // 可视化结果
                                 armorDetector.visualize(displayFrame, armors);
                             }
+
+                            // 计算推理耗时
+                            auto end_time = std::chrono::high_resolution_clock::now();
+                            std::chrono::duration<double, std::milli> inference_time = end_time - start_time;
+
+                            // 在图像上显示推理耗时
+                            std::ostringstream inference_text;
+                            inference_text << "Inference: " << inference_time.count() << " ms";
+                            cv::putText(displayFrame, inference_text.str(), cv::Point(10, 60), 
+                                        cv::FONT_HERSHEY_SIMPLEX, 1.0, cv::Scalar(0, 255, 0), 2);
                         }
                     }
 
-                    // 计算帧率
+                    // 修改帧率计算逻辑，降低精度
                     frame_count++;
                     auto current_time = std::chrono::high_resolution_clock::now();
                     std::chrono::duration<double> elapsed = current_time - last_time;
                     if (elapsed.count() >= 1.0) {
-                        fps = frame_count / elapsed.count();
+                        fps = static_cast<int>(frame_count / elapsed.count() + 0.5); // 四舍五入为整数
                         frame_count = 0;
                         last_time = current_time;
                     }
