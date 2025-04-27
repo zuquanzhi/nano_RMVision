@@ -1,7 +1,5 @@
 # nano_RMVision
 
-![项目Logo](https://raw.githubusercontent.com/user/nano_RMVision/main/docs/images/logo.png)
-
 ## 🚀 项目简介
 nano_RMVision 是一款高性能、轻量级的机器人视觉系统，专为 RoboMaster 比赛设计。它结合了工业相机 SDK、OpenCV 图像处理和 OpenVINO 深度学习推理技术，提供了实时装甲板检测与识别功能。系统采用模块化设计，支持多种运行模式和环境适配，是机器人视觉解决方案的理想选择。
 
