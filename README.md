@@ -86,8 +86,6 @@ armor_detect:
 | R | 刷新显示（解决远程连接黑框问题） |
 | ESC | 退出程序 |
 
-## 📊 技术架构
-架构图
 
 ## 🔍 功能详解
 ### 装甲板检测
@@ -141,13 +139,15 @@ armor_detect:
 - 验证驱动是否正确安装
 - 执行 sudo usermod -aG video $USER 并重新登录
 
+## 📺 运行演示
+![](img/image.png)
+[Screencast from 2025年04月19日 22时36分35秒.webm](https://github.com/user-attachments/assets/65117674-6d6c-4003-b971-d7896e906313)
+
+
 ## 📝 许可证
 本项目基于 MIT License 开源。
-
-## 📺 演示图片
-![](img/image.png)
-
 提示: 如果您在项目中使用了 nano_RMVision，请考虑在您的项目中引用本项目。
+
 
 
 <!-- <p align="center"> <img src="https://raw.githubusercontent.com/zuquanzhi/nano_RMVision/main/docs/images/logo_small.png" width="120" /> <br> <small>nano_RMVision © 2025</small> </p> -->
