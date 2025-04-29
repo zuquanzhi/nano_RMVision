@@ -141,7 +141,7 @@ armor_detect:
 
 ## 📺 运行演示
 ![](img/image.png)
-[Screencast from 2025年04月19日 22时36分35秒.webm](https://github.com/user-attachments/assets/65117674-6d6c-4003-b971-d7896e906313)
+[演示视频](https://github.com/user-attachments/assets/65117674-6d6c-4003-b971-d7896e906313)
 
 
 ## 📝 许可证
