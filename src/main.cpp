@@ -112,7 +112,7 @@ int main(int argc, char* argv[]) {
             ui.init();
             
             // 初始化装甲板检测器
-            std::string model_path = std::filesystem::absolute("../model/last.xml").string();
+            std::string model_path = std::filesystem::absolute("../model/best.xml").string();
             ArmorDetector armorDetector(model_path);
             armorDetector.init();
             

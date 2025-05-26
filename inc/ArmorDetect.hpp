@@ -65,10 +65,9 @@ public:
             std::cout << "输出张量形状: " << output_tensor.get_shape() << std::endl;
             auto result = output_tensor.data<float>();
             
-            // 执行NMS获取装甲板检测结果
+            // 执行NMS获取装甲板检测结果（使用标准YOLO格式）
             nms(result, conf_thr, iou_thr, armors, 43);
             
-            std::cout << "检测到 " << armors.size() << " 个装甲板" << std::endl;
             return true;
         } catch (const std::exception& e) {
             std::cerr << "处理失败: " << e.what() << std::endl;
@@ -81,25 +80,21 @@ public:
         cv::Mat visualization_image = image.clone();
         
         for (const auto& armor : armors) {
-            // 映射坐标回原始图像
-            int x1 = int((armor.x1 - padding_x) / scale);
-            int y1 = int((armor.y1 - padding_y) / scale);
-            int x2 = int((armor.x2 - padding_x) / scale);
-            int y2 = int((armor.y2 - padding_y) / scale);
-            int x3 = int((armor.x3 - padding_x) / scale);
-            int y3 = int((armor.y3 - padding_y) / scale);
-            int x4 = int((armor.x4 - padding_x) / scale);
-            int y4 = int((armor.y4 - padding_y) / scale);
+            // 将YOLO格式坐标映射回原始图像
+            float x = (armor.x - padding_x) / scale;
+            float y = (armor.y - padding_y) / scale;
+            float w = armor.width / scale;
+            float h = armor.height / scale;
             
-            // 确保坐标在图像范围内
-            x1 = std::max(0, std::min(x1, image.cols - 1));
-            y1 = std::max(0, std::min(y1, image.rows - 1));
-            x2 = std::max(0, std::min(x2, image.cols - 1));
-            y2 = std::max(0, std::min(y2, image.rows - 1));
-            x3 = std::max(0, std::min(x3, image.cols - 1));
-            y3 = std::max(0, std::min(y3, image.rows - 1));
-            x4 = std::max(0, std::min(x4, image.cols - 1));
-            y4 = std::max(0, std::min(y4, image.rows - 1));
+            // 计算矩形框的四个角点
+            int x1 = std::max(0, std::min(int(x - w/2), image.cols - 1));
+            int y1 = std::max(0, std::min(int(y - h/2), image.rows - 1));
+            int x2 = std::max(0, std::min(int(x + w/2), image.cols - 1));
+            int y2 = std::max(0, std::min(int(y - h/2), image.rows - 1));
+            int x3 = std::max(0, std::min(int(x + w/2), image.cols - 1));
+            int y3 = std::max(0, std::min(int(y + h/2), image.rows - 1));
+            int x4 = std::max(0, std::min(int(x - w/2), image.cols - 1));
+            int y4 = std::max(0, std::min(int(y + h/2), image.rows - 1));
             
             // 绘制装甲板
             cv::Scalar color = COLORS[armor.label % COLORS.size()];
@@ -116,6 +111,9 @@ public:
             cv::circle(visualization_image, cv::Point(x3, y3), 5, cv::Scalar(255, 0, 0), -1);
             cv::circle(visualization_image, cv::Point(x4, y4), 5, cv::Scalar(255, 255, 0), -1);
             
+            // 绘制中心点
+            cv::circle(visualization_image, cv::Point(int(x), int(y)), 5, cv::Scalar(255, 255, 255), -1);
+            
             // 标签信息
             std::string label = (armor.label < CLASS_NAMES.size() ? 
                                 CLASS_NAMES[armor.label] : "class" + std::to_string(armor.label)) + 
@@ -124,7 +122,10 @@ public:
             cv::putText(visualization_image, label, cv::Point(x1, y1 - 10),
                         cv::FONT_HERSHEY_SIMPLEX, 0.6, color, 2);
             
-            std::cout << "装甲板: 类别=" << label << ", 置信度=" << armor.score << std::endl;
+            std::cout << "装甲板: 类别=" << label 
+                      << ", 中心点=(" << x << "," << y << ")"
+                      << ", 宽高=(" << w << "," << h << ")"
+                      << ", 置信度=" << armor.score << std::endl;
         }
         
         // 保存结果
@@ -145,8 +146,7 @@ private:
         padding_x = int((640 - original_image.cols * scale) / 2);
         
         cv::resize(original_image, processed_image, cv::Size(original_image.cols * scale, original_image.rows * scale));
-        cv::copyMakeBorder(processed_image, processed_image, padding_y, padding_y, padding_x, padding_x, 
-                          cv::BORDER_CONSTANT, cv::Scalar(144, 144, 144));
+        cv::copyMakeBorder(processed_image, processed_image, padding_y, padding_y, padding_x, padding_x, cv::BORDER_CONSTANT, cv::Scalar(144, 144, 144));
     }
 };
 

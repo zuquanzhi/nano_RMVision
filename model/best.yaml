@@ -1,0 +1,8 @@
+stride: 32
+names:
+  0: target_area
+  1: active_target_area
+  2: arrow_lightbar
+  3: active_lightbar
+  4: r_logo
+  5: ten_score
