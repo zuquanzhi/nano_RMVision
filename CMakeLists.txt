@@ -15,7 +15,7 @@ link_directories(${CMAKE_CURRENT_SOURCE_DIR}/lib)
 # 查看SDK库是否存在于项目目录中
 file(GLOB SDK_LIBS ${CMAKE_CURRENT_SOURCE_DIR}/lib/*.so)
 if(SDK_LIBS)
-  message(STATUS "Found SDK libraries: ${SDK_LIBS}")
+message(STATUS "Found SDK libraries: ${SDK_LIBS}")
 endif()
 
 # Set the build type to Release for optimization
