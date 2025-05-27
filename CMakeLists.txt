@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.0)
-project(simple_camera)
+project(nano_rmvision)
 
 # 查找OpenCV包
 find_package(OpenCV REQUIRED)
@@ -32,9 +32,9 @@ if(CMAKE_GENERATOR MATCHES "Makefiles|Ninja")
 endif()
 
 # 添加所有源文件到可执行文件
-add_executable(simple_camera 
+add_executable(nano_rmvision 
     src/main.cpp
-    src/simple_camera.cpp
+    src/camera.cpp
     src/camera_ui.cpp
     src/config_manager.cpp
 )
@@ -44,4 +44,4 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wl,-rpath,${CMAKE_CURRENT_SOURCE_DIR}/l
 
 # 链接OpenCV库和相机SDK库
 # 直接链接到MVSDK库
-target_link_libraries(simple_camera PRIVATE ${OpenCV_LIBS} MVSDK openvino::runtime)
+target_link_libraries(nano_rmvision PRIVATE ${OpenCV_LIBS} MVSDK openvino::runtime)

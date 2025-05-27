@@ -1,4 +1,4 @@
-#include "SimpleCamera.h"
+#include "Camera.h"
 #include "CameraUI.h"
 #include <iostream>
 #include <string>

@@ -66,7 +66,7 @@ public:
             auto result = output_tensor.data<float>();
             
             // 执行NMS获取装甲板检测结果（使用标准YOLO格式）
-            nms(result, conf_thr, iou_thr, armors, 43);
+            nms(result, conf_thr, iou_thr, armors, 11);
             
             return true;
         } catch (const std::exception& e) {

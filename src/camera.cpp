@@ -1,4 +1,4 @@
-#include "SimpleCamera.h"
+#include "Camera.h"
 #include <iostream>
 #include <thread>
 #include <chrono>
