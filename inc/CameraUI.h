@@ -1,7 +1,7 @@
 #ifndef CAMERA_UI_H
 #define CAMERA_UI_H
 
-#include "SimpleCamera.h"
+#include "Camera.h"
 #include <opencv2/opencv.hpp>
 #include <string>
 #include <functional>
