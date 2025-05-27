@@ -65,6 +65,12 @@ void ConfigManager::setDefaultValues() {
     intValues["r_gain"] = 80;
     intValues["g_gain"] = 76;
     intValues["b_gain"] = 110;
+
+    // 装甲板检测阈值参数
+    intValues["armor_brightness_threshold_red"] = 90;
+    intValues["armor_brightness_threshold_blue"] = 110;
+    intValues["brightness_threshold"] = 120;
+    intValues["channal_sum_threshold"] = 150;
 }
 
 // 获取当前时间字符串
@@ -270,6 +276,17 @@ bool ConfigManager::saveConfig() {
              << "                   # 绿色增益 (0-400)\n";
         file << "b_gain: " << intValues["b_gain"] 
              << "                  # 蓝色增益 (0-400)\n";
+        
+        // 装甲板检测阈值参数
+        file << "\n# 装甲板检测阈值参数\n";
+        file << "armor_brightness_threshold_red: " << intValues["armor_brightness_threshold_red"]
+             << " # 红色装甲板亮度阈值\n";
+        file << "armor_brightness_threshold_blue: " << intValues["armor_brightness_threshold_blue"]
+             << " # 蓝色装甲板亮度阈值\n";
+        file << "brightness_threshold: " << intValues["brightness_threshold"]
+             << "           # 整体亮度阈值\n";
+        file << "channal_sum_threshold: " << intValues["channal_sum_threshold"]
+             << "        # 通道和阈值\n";
         
         file.close();
         

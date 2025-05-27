@@ -89,48 +89,44 @@ void CameraUI::updateTrackbarsFromCamera() {
 
 // 创建所有滑动条
 void CameraUI::createTrackbars() {
-    // 曝光时间 (0-20000微秒)
-    cv::createTrackbar("曝光时间", "Controls", nullptr, 20000, onExposureChange, this);
-    
-    // 模拟增益 (1-16)
-    cv::createTrackbar("增益", "Controls", nullptr, 16, onGainChange, this);
-    
-    // 亮度 (0-1000)
-    cv::createTrackbar("亮度", "Controls", nullptr, 1000, onBrightnessChange, this);
-    
-    // Gamma (0-350)
-    cv::createTrackbar("Gamma", "Controls", nullptr, 350, onGammaChange, this);
-    
-    // 对比度 (-50-100)
-    cv::createTrackbar("对比度", "Controls", nullptr, 150, onContrastChange, this);
-    
-    // 饱和度 (0-200)
-    cv::createTrackbar("饱和度", "Controls", nullptr, 200, onSaturationChange, this);
-    
-    // 锐度 (0-100)
-    cv::createTrackbar("锐度", "Controls", nullptr, 100, onSharpnessChange, this);
-    
-    // R增益 (0-400)
-    cv::createTrackbar("R增益", "Controls", nullptr, 400, onRGainChange, this);
-    
-    // G增益 (0-400)
-    cv::createTrackbar("G增益", "Controls", nullptr, 400, onGGainChange, this);
-    
-    // B增益 (0-400)
-    cv::createTrackbar("B增益", "Controls", nullptr, 400, onBGainChange, this);
-    
-    // 自动曝光 (0-1)
-    cv::createTrackbar("自动曝光", "Controls", nullptr, 1, onAutoExposureChange, this);
-    
-    // 自动白平衡 (0-1)
-    cv::createTrackbar("自动白平衡", "Controls", nullptr, 1, onAutoWBChange, this);
+    cv::createTrackbar("曝光值", windowName, &params.exposure, 20000, onExposureChange, this);
+    cv::createTrackbar("增益", windowName, &params.gain, 100, onGainChange, this);
+    cv::createTrackbar("伽马", windowName, &params.gamma, 200, onGammaChange, this); // Gamma typically 0.1 to 2.0, scale by 100
+    cv::createTrackbar("对比度", windowName, &params.contrast, 200, onContrastChange, this); // Contrast typically 0 to 200
+    cv::createTrackbar("饱和度", windowName, &params.saturation, 200, onSaturationChange, this); // Saturation typically 0 to 200
+    cv::createTrackbar("锐度", windowName, &params.sharpness, 100, onSharpnessChange, this); // Sharpness typically 0 to 100
+    cv::createTrackbar("白平衡红", windowName, &params.wbR, 400, onWBRChange, this); // WB typically 0 to 400
+    cv::createTrackbar("白平衡绿", windowName, &params.wbG, 400, onWBGChange, this);
+    cv::createTrackbar("白平衡蓝", windowName, &params.wbB, 400, onWBBChange, this);
+
+    // Add new trackbars for armor detection thresholds
+    // Assuming params will have these members, and they are int.
+    // Max values are set to 255 as they seem to be pixel intensity thresholds.
+    // Default values are from the user prompt.
+    // TODO: Ensure these params are added to the CameraParams struct and initialized in loadConfig.
+    cv::createTrackbar("Armor Brightness Thresh Red", windowName, nullptr, 255, onArmorBrightnessThresholdRedChange, this);
+    cv::setTrackbarPos("Armor Brightness Thresh Red", windowName, 90);
+    cv::createTrackbar("Armor Brightness Thresh Blue", windowName, nullptr, 255, onArmorBrightnessThresholdBlueChange, this);
+    cv::setTrackbarPos("Armor Brightness Thresh Blue", windowName, 110);
+    cv::createTrackbar("Brightness Thresh", windowName, nullptr, 255, onBrightnessThresholdChange, this);
+    cv::setTrackbarPos("Brightness Thresh", windowName, 120);
+    cv::createTrackbar("Channal Sum Thresh", windowName, nullptr, 255, onChannalSumThresholdChange, this);
+    cv::setTrackbarPos("Channal Sum Thresh", windowName, 150);
 }
 
 // 创建按钮控件
 void CameraUI::createButtons() {
-    // 创建一个保存配置的按钮（使用跟踪条模拟按钮）
-    cv::createTrackbar("保存配置", "Controls", nullptr, 1, onSaveConfigButtonClick, this);
-    cv::setTrackbarPos("保存配置", "Controls", 0);
+
+    // 自动曝光 (使用两个按钮替代拖动条)
+    cv::createButton("自动曝光开", onAutoExposureOn, this, cv::QT_PUSH_BUTTON);
+    cv::createButton("自动曝光关", onAutoExposureOff, this, cv::QT_PUSH_BUTTON);
+    
+    // 自动白平衡 (使用两个按钮替代拖动条)
+    cv::createButton("自动白平衡开", onAutoWBOn, this, cv::QT_PUSH_BUTTON);
+    cv::createButton("自动白平衡关", onAutoWBOff, this, cv::QT_PUSH_BUTTON);
+
+    // 创建一个保存配置的按钮
+    cv::createButton("保存配置", onSaveConfigButtonClick, this, cv::QT_PUSH_BUTTON);
 }
 
 // 运行UI主循环
@@ -336,25 +332,63 @@ void CameraUI::onBGainChange(int pos, void* userdata) {
     std::cout << "B增益设置为: " << pos << std::endl;
 }
 
-void CameraUI::onAutoExposureChange(int pos, void* userdata) {
+// 自动曝光开启按钮回调
+void CameraUI::onAutoExposureOn(int, void* userdata) {
     CameraUI* ui = static_cast<CameraUI*>(userdata);
-    ui->camera.setAutoExposure(pos == 1);
-    std::cout << "自动曝光: " << (pos == 1 ? "开启" : "关闭") << std::endl;
+    ui->camera.setAutoExposure(true);
+    std::cout << "自动曝光: 开启" << std::endl;
 }
 
-void CameraUI::onAutoWBChange(int pos, void* userdata) {
+// 自动曝光关闭按钮回调
+void CameraUI::onAutoExposureOff(int, void* userdata) {
     CameraUI* ui = static_cast<CameraUI*>(userdata);
-    ui->camera.setAutoWhiteBalance(pos == 1);
-    std::cout << "自动白平衡: " << (pos == 1 ? "开启" : "关闭") << std::endl;
+    ui->camera.setAutoExposure(false);
+    std::cout << "自动曝光: 关闭" << std::endl;
 }
 
-void CameraUI::onSaveConfigButtonClick(int state, void* userdata) {
-    if (state == 1) {
-        CameraUI* ui = static_cast<CameraUI*>(userdata);
-        // 保存配置
-        ui->camera.saveParametersToConfig();
-        std::cout << "相机参数已保存到配置文件" << std::endl;
-        // 将按钮状态恢复为0
-        cv::setTrackbarPos("保存配置", "Controls", 0);
-    }
+// 自动白平衡开启按钮回调
+void CameraUI::onAutoWBOn(int, void* userdata) {
+    CameraUI* ui = static_cast<CameraUI*>(userdata);
+    ui->camera.setAutoWhiteBalance(true);
+    std::cout << "自动白平衡: 开启" << std::endl;
+}
+
+// 自动白平衡关闭按钮回调
+void CameraUI::onAutoWBOff(int, void* userdata) {
+    CameraUI* ui = static_cast<CameraUI*>(userdata);
+    ui->camera.setAutoWhiteBalance(false);
+    std::cout << "自动白平衡: 关闭" << std::endl;
+}
+
+// 保存配置按钮回调 (修改为按钮回调格式)
+void CameraUI::onSaveConfigButtonClick(int, void* userdata) {
+    CameraUI* ui = static_cast<CameraUI*>(userdata);
+    // 保存配置
+    ui->camera.saveParametersToConfig();
+    std::cout << "相机参数已保存到配置文件" << std::endl;
+}
+
+// Empty definitions for new armor detection threshold callbacks
+void CameraUI::onArmorBrightnessThresholdRedChange(int value, void* userdata) {
+    // TODO: Implement or link to actual parameter update
+    // reinterpret_cast<CameraUI*>(userdata)->params.armorBrightnessThresholdRed = value;
+    // std::cout << "Armor Brightness Threshold Red: " << value << std::endl;
+}
+
+void CameraUI::onArmorBrightnessThresholdBlueChange(int value, void* userdata) {
+    // TODO: Implement or link to actual parameter update
+    // reinterpret_cast<CameraUI*>(userdata)->params.armorBrightnessThresholdBlue = value;
+    // std::cout << "Armor Brightness Threshold Blue: " << value << std::endl;
+}
+
+void CameraUI::onBrightnessThresholdChange(int value, void* userdata) {
+    // TODO: Implement or link to actual parameter update
+    // reinterpret_cast<CameraUI*>(userdata)->params.brightnessThreshold = value;
+    // std::cout << "Brightness Threshold: " << value << std::endl;
+}
+
+void CameraUI::onChannalSumThresholdChange(int value, void* userdata) {
+    // TODO: Implement or link to actual parameter update
+    // reinterpret_cast<CameraUI*>(userdata)->params.channalSumThreshold = value;
+    // std::cout << "Channal Sum Threshold: " << value << std::endl;
 }
